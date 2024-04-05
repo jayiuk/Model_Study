@@ -18,10 +18,9 @@ class CustomDataset(torch.utils.data.Dataset):
     self.img_list = natsorted(self.img_list)
     self.pos_list = []
     for idx, img in enumerate(self.img_list):
-        img_info = img.split("/")
         temp = []
         for i in range(max(0, idx-self.window), min(idx+self.window+1, len(self.img_list))):
-            if (i != idx) and (img.split("/")[1:3] == self.img_list[i].split("/")[1:3]):
+            if (i != idx) and (img.split("/")[-2] == self.img_list[i].split("/")[-2]):
                 temp.append(self.img_list[i])
         self.pos_list.append(temp)
         
