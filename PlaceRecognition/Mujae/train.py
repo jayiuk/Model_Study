@@ -30,21 +30,19 @@ n_epoch=0
 lr = 1e-4
 
 def vlad_train(epochs, learning_rate):
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)  # 최적화 알고리즘 설정
+    optimizer = optim.Adam(triplet.parameters(), lr=learning_rate)  # 최적화 알고리즘 설정
     
     for epoch in range(1, epochs + 1):  # epoch는 1부터 시작
-        print(epoch)
         train_loss = train_epochs(optimizer)
-        if epoch % 10 == 0:  # 10 epoch마다 훈련 손실을 출력
-            print(f'Epoch {epoch}, Training loss: {train_loss:.4f}')
-            torch.save(model.state_dict(), f'/home/student4/PR_code/checkpoint_{epoch}.pth')
+        print(f'Epoch {epoch}, Training loss: {train_loss:.4f}')
+        torch.save(triplet.state_dict(), f'/home/student4/PR_code/checkpoint_{epoch}.pth')
     
     test_loss = test_epochs()
     print(f'Epoch {epoch}, Testing loss: {test_loss:.4f}')
 
 def train_epochs(optimizer):
     running_loss = 0.0
-    model.train()  # 모델을 학습 모드로 설정
+    triplet.train()  # 모델을 학습 모드로 설정
     
     for i, (images, pos, neg) in enumerate(train_loader):
         images, pos, neg = images.cuda(), pos.cuda(), neg.cuda()
@@ -59,7 +57,7 @@ def train_epochs(optimizer):
 
 def test_epochs():
     running_loss = 0.0
-    model.eval()  # 모델을 평가 모드로 설정
+    triplet.eval()  # 모델을 평가 모드로 설정
     with torch.no_grad():
         for i, (images, pos, neg) in enumerate(test_loader):
             images, pos, neg = images.cuda(), pos.cuda(), neg.cuda()
@@ -69,4 +67,4 @@ def test_epochs():
     
     return running_loss / len(test_loader)  # 평균 테스트 손실 반환
 
-vlad_train(100, lr)
+vlad_train(10, lr)
