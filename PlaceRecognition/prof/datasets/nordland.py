@@ -23,7 +23,9 @@ class CustomDataset(torch.utils.data.Dataset):
         self.maxnum = {}
         for path, name in self.sections:
             files = natsorted(glob.glob(os.path.join(path, "*.png")))
-            self.maxnum[name] = [int(os.path.splitext(os.path.basename(files[0]))[0]), int(os.path.splitext(os.path.basename(files[-1]))[0])]
+            first_filename = os.path.splitext(os.path.basename(files[0]))[0]
+            last_filename = os.path.splitext(os.path.basename(files[-1]))[0]
+            self.maxnum[name] = [int(first_filename), int(last_filename)]
 
     def __len__(self):
         return len(self.images)
