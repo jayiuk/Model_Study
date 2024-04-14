@@ -64,7 +64,7 @@ class EmbedNet(nn.Module):
         self.net_vlad = net_vlad
 
     def forward(self, x):
-        x = self.base_model.features(x)
+        x = self.base_model(x)
         embedded_x = self.net_vlad(x)
         return embedded_x
 
