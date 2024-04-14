@@ -19,7 +19,7 @@ test_dataset = getattr(importlib.import_module('dataset'), 'CustomDataset')(conf
 train_loader = torch.utils.data.DataLoader(train_dataset, config.batch_size)
 test_loader = torch.utils.data.DataLoader(test_dataset, config.batch_size)
 
-model = vgg16(weights=VGG16_Weights.IMAGENET1K_V1).features
+model = vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
 net_vlad = NetVLAD(num_clusters=12, dim=512, alpha=7.0)#에러가 나서 이 부분 파라미터 조정
 embednet = EmbedNet(model, net_vlad).cuda()
 triplet = TripletNet(embednet).cuda()
