@@ -20,9 +20,11 @@ test_dataset = getattr(importlib.import_module('dataset'), 'CustomDataset')(conf
 train_loader = torch.utils.data.DataLoader(train_dataset, config.batch_size)
 test_loader = torch.utils.data.DataLoader(test_dataset, config.batch_size)
 
+
 vgg_model = vgg16(weights=VGG16_Weights.IMAGENET1K_V1)
 vgg_layers = list(vgg_model.features.children())[:-1]
 model = nn.Sequential(*vgg_layers)
+
 net_vlad = NetVLAD(num_clusters=12, dim=512, alpha=7.0)#에러가 나서 이 부분 파라미터 조정
 embednet = EmbedNet(model, net_vlad).cuda()
 triplet = TripletNet(embednet).cuda()
@@ -81,6 +83,8 @@ def test_epochs():
     
     return running_loss / len(test_loader)  # 평균 테스트 손실 반환
 
+
 train_losses, test_losses = vlad_train(10, lr)
 print("Train Losses : ", train_losses)
 print("Test Losses : ", test_losses)
+
