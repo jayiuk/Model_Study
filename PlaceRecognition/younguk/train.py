@@ -88,12 +88,8 @@ def test_epochs():
     
     return running_loss / len(test_loader)  # 평균 테스트 손실 반환
 
-<<<<<<< HEAD
 train_losses, test_losses = vlad_train(args.epoch, lr)
-=======
 
-train_losses, test_losses = vlad_train(10, lr)
->>>>>>> 8387b9b43565da76ba44f340cac595e2d417dadf
 print("Train Losses : ", train_losses)
 print("Test Losses : ", test_losses)
 
