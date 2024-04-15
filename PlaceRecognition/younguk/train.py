@@ -11,7 +11,12 @@ from torchvision.models import alexnet, AlexNet_Weights, vgg16, VGG16_Weights
 from torchvision import transforms
 import sys
 from tqdm import tqdm
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--epoch', type = int, default = 10)
+parser.add_argument('--lr', type = float, default = 1e-4)
+args = parser.parse_args()
 #Data 부분
 #prof께서 작성해주신 Code에서 살짝 수정
 train_dataset = getattr(importlib.import_module('dataset'), 'CustomDataset')(config, config.train_data_path)
@@ -27,8 +32,8 @@ net_vlad = NetVLAD(num_clusters=12, dim=512, alpha=7.0)#에러가 나서 이 부
 embednet = EmbedNet(model, net_vlad).cuda()
 triplet = TripletNet(embednet).cuda()
 criterion = nn.TripletMarginLoss(margin=0.1, p=2)#가까운건 더 가깝게 먼건 더 멀게 Triplet Loss
-n_epoch=0
-lr = 1e-4
+n_epoch = 0
+lr = args.lr
 
 def vlad_train(epochs, learning_rate):
     optimizer = optim.Adam(triplet.parameters(), lr=learning_rate)  # 최적화 알고리즘 설정
@@ -40,7 +45,7 @@ def vlad_train(epochs, learning_rate):
         train_losses.append(train_loss)
         print(f'Epoch {epoch}, Training loss: {train_loss:.4f}')
         sys.stdout.flush()
-        torch.save(triplet.state_dict(), f'/home/student4/PR_code/checkpoint_{epoch}.pth')
+        torch.save(triplet.state_dict(), f'C:/capstone_model/PR_model/checkpoint_{epoch}.pth')
     
         test_loss = test_epochs()
         test_losses.append(test_loss)
@@ -81,6 +86,6 @@ def test_epochs():
     
     return running_loss / len(test_loader)  # 평균 테스트 손실 반환
 
-train_losses, test_losses = vlad_train(10, lr)
+train_losses, test_losses = vlad_train(args.epoch, lr)
 print("Train Losses : ", train_losses)
 print("Test Losses : ", test_losses)
