@@ -25,8 +25,8 @@ class NetVLAD(nn.Module):
         self.alpha = alpha
         self.normalize_input = normalize_input
         self.conv = nn.Conv2d(dim, num_clusters, kernel_size=(1, 1), bias=True)
-        self.centroids = nn.Parameter(torch.rand(num_clusters, dim)) 
-        self._init_params() 
+        self.centroids = nn.Parameter(torch.rand(num_clusters, dim))
+        self._init_params()
 
     def _init_params(self):
         self.conv.weight = nn.Parameter(
@@ -50,34 +50,10 @@ class NetVLAD(nn.Module):
             self.centroids.expand(x_flatten.size(-1), -1, -1).permute(1, 2, 0).unsqueeze(0)
         residual *= soft_assign.unsqueeze(2)
         vlad = residual.sum(dim=-1)
-        vlad = F.normalize(vlad, p=2, dim=2)
-        vlad = vlad.view(x.size(0), -1)
-        vlad = F.normalize(vlad, p=2, dim=1)
+        vlad = F.normalize(vlad, p=2, dim=2)  # intra-normalization
+        vlad = vlad.view(x.size(0), -1)  # flatten
+        vlad = F.normalize(vlad, p=2, dim=1)  # L2 normalize
 
         return vlad
 
 
-class EmbedNet(nn.Module):
-    def __init__(self, base_model, net_vlad):
-        super(EmbedNet, self).__init__()
-        self.base_model = base_model
-        self.net_vlad = net_vlad
-
-    def forward(self, x):
-        x = self.base_model(x)
-        embedded_x = self.net_vlad(x)
-        return embedded_x
-
-
-class TripletNet(nn.Module):
-    def __init__(self, embed_net):
-        super(TripletNet, self).__init__()
-        self.embed_net = embed_net 
-
-    def forward(self, a, p, n): #a : 앵커, p : positive, n : negative
-        embedded_a = self.embed_net(a)
-        embedded_p = self.embed_net(p)
-        embedded_n = self.embed_net(n)
-        return embedded_a, embedded_p, embedded_n
-    def feature_extract(self, x):
-        return self.embed_net(x)
