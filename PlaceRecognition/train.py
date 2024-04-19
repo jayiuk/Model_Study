@@ -52,8 +52,6 @@ def main():
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-            if i % 10 == 0:
-                print(f'Training... [{i * len(anc)}/{len(train_loader.dataset)} ({100. * i / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
         return total_loss / len(train_loader)
 
     def validate():
