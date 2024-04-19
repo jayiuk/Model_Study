@@ -1,6 +1,7 @@
 import os
 import importlib
 import torch
+import torch.nn as nn
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -26,8 +27,8 @@ def main():
     train_sampler = DistributedSampler(train_dataset)
     test_sampler = DistributedSampler(test_dataset)
 
-    train_loader = torch.utils.data.DataLoader(train_dataset, int(config.batch_size), num_workers=int(config.num_workers), sampler=train_sampler, pin_memory=True)
-    test_loader = torch.utils.data.DataLoader(test_dataset, int(config.batch_size), num_workers=int(config.num_workers), sampler=test_sampler, pin_memory=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, config.batch_size, num_workers=config.num_workers, sampler=train_sampler, pin_memory=True)
+    test_loader = torch.utils.data.DataLoader(test_dataset, config.batch_size, num_workers=config.num_workers, sampler=test_sampler, pin_memory=True)
 
     backbone = get_backbone(config.backbone)
     model = get_model(config.model)
@@ -58,44 +59,40 @@ def main():
     def validate():
         triplet_net.eval()
         total_loss = 0
-        total_correct_img_neg = 0
-        total_correct_img_pos = 0
-        total_correct_pos_neg = 0
+        total_dist_pos = 0
+        total_dist_neg = 0
         num_samples = 0
 
         with torch.no_grad():
             for i, (anc, pos, neg) in enumerate(test_loader):
                 anc, pos, neg = anc.to(device_id), pos.to(device_id), neg.to(device_id)
-                anc_feat, pos_feat, net_feat = triplet_net(anc, pos, neg)
-                loss = criterion(anc_feat, pos_feat, net_feat)
+                anc_feat, pos_feat, neg_feat = triplet_net(anc, pos, neg)
+                loss = criterion(anc_feat, pos_feat, neg_feat)
                 total_loss += loss.item()
 
-                dist_img_pos = nn.PairwiseDistance(anc_feat, pos_feat)
-                dist_img_neg = nn.PairwiseDistance(anc_feat, net_feat)
-                dist_pos_neg = nn.PairwiseDistance(pos_feat, net_feat)
-
-                total_correct_img_neg += (dist_img_pos < dist_img_neg).sum().item()
-                total_correct_img_pos += (dist_img_neg > dist_img_pos).sum().item()
-                total_correct_pos_neg += (dist_pos_neg > dist_img_pos).sum().item()
+                total_dist_pos += nn.PairwiseDistance(anc_feat, pos_feat)
+                total_dist_neg += nn.PairwiseDistance(anc_feat, neg_feat)
 
                 num_samples += anc.size(0)
 
         avg_loss = total_loss / num_samples
-        recall_img_neg = total_correct_img_neg / num_samples
-        recall_img_pos = total_correct_img_pos / num_samples
-        recall_pos_neg = total_correct_pos_neg / num_samples
+        avg_dist_pos = total_dist_pos / num_samples
+        avg_dist_neg = total_dist_neg / num_samples
 
-        print(f'Validation Loss: {avg_loss:.4f}')
-        print(f'Recall (Image-Negative): {recall_img_neg:.4f}')
-        print(f'Recall (Image-Positive): {recall_img_pos:.4f}')
-        print(f'Recall (Positive-Negative): {recall_pos_neg:.4f}')
+        return avg_loss, avg_dist_pos, avg_dist_neg
 
     for epoch in range(1, config.total_epoch):
         print(f'Epoch {epoch} Started')
         train_sampler.set_epoch(epoch)
         train_loss = train()
         print(f'Epoch {epoch} Finished: Train loss {train_loss:.4f}')
-        validate()
+
+        print(f'Validation Started')
+        avg_loss, avg_dist_pos, avg_dist_neg = validate()
+        print(f'Validation Finished: Validation loss {avg_loss:.4f}')
+        print(f'Average distance with positive sample: {avg_dist_pos:.4f}')
+        print(f'Average distance with negative sample: {avg_dist_neg:.4f}')
+
         torch.save(triplet_net.state_dict(), os.path.join(PATH.CHECKPOINT, f'{config.backbone}_{config.model}_checkpoint_e{epoch}.pth'))
     dist.destroy_process_group()
 
