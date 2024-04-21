@@ -6,6 +6,7 @@ import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
+from torch.utils.tensorboard import SummaryWriter
 
 from setup import config
 from utils.util_model import EmbedNet, TripletNet
@@ -13,6 +14,8 @@ import utils.util_path as PATH
 
 from backbones import get_backbone
 from models import get_model
+
+writer = SummaryWriter()
 
 
 def main():
@@ -83,10 +86,12 @@ def main():
         print(f'Epoch {epoch} Started')
         train_sampler.set_epoch(epoch)
         train_loss = train()
+        writer.add_scalar('train_loss', train_loss)
         print(f'Epoch {epoch} Finished: Train loss {train_loss:.4f}')
 
         print(f'Validation Started')
         avg_loss, avg_dist_pos, avg_dist_neg = validate()
+        writer.add_scalar('avg loss', avg_loss)
         print(f'Validation Finished: Validation loss {avg_loss:.4f}')
         print(f'Average distance with positive sample: {avg_dist_pos:.4f}')
         print(f'Average distance with negative sample: {avg_dist_neg:.4f}')
